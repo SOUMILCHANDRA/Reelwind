@@ -36,8 +36,25 @@ class StatsProvider with ChangeNotifier {
       notifyListeners();
 
       try {
-        File file = File(result.files.single.path!);
-        _diary = await _csvParser.parseDiaryCSV(file);
+        final platformFile = result.files.single;
+        final file = File(platformFile.path!);
+        final fileName = platformFile.name.toLowerCase();
+
+        List<DiaryEntry> newEntries = [];
+        if (fileName.contains('diary')) {
+          newEntries = await _csvParser.parseDiaryCSV(file);
+        } else if (fileName.contains('watched')) {
+          newEntries = await _csvParser.parseWatchedCSV(file);
+        } else if (fileName.contains('ratings')) {
+          newEntries = await _csvParser.parseRatingsCSV(file);
+        } else {
+          // Fallback to diary parsing if unknown
+          newEntries = await _csvParser.parseDiaryCSV(file);
+        }
+
+        // Merge entries if needed, or replace
+        // For simplicity, we'll replace for now, but in a real app we might merge
+        _diary = newEntries;
         
         if (_isApiEnabled) {
           await _enrichMetadata();
