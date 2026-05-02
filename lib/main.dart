@@ -4,6 +4,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/providers/stats_provider.dart';
 import 'presentation/screens/dashboard_screen.dart';
 import 'presentation/screens/heatmap_screen.dart';
+import 'presentation/screens/films_screen.dart';
+import 'presentation/screens/milestones_screen.dart';
+import 'presentation/screens/settings_screen.dart';
+import 'presentation/screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,14 +82,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _screens = [
     const HeatmapScreen(),
-    const DashboardScreen(), // Stats
-    const Center(child: Text('Diary')),
-    const Center(child: Text('Search')),
-    const Center(child: Text('Settings')),
+    const DashboardScreen(),
+    const FilmsScreen(),
+    const MilestonesScreen(),
+    const SettingsScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final statsProvider = context.watch<StatsProvider>();
+    
+    // Show onboarding if no data
+    if (statsProvider.diary.isEmpty && !statsProvider.isLoading) {
+      return const OnboardingScreen();
+    }
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -97,8 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'Activity'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Diary'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+          BottomNavigationBarItem(icon: Icon(Icons.movie_outlined), label: 'Films'),
+          BottomNavigationBarItem(icon: Icon(Icons.emoji_events_outlined), label: 'Awards'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),

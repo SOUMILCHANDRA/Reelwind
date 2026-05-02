@@ -262,4 +262,92 @@ class StatsProvider with ChangeNotifier {
       'lastYear': lastYearCount,
     };
   }
+
+  // Milestones
+  Map<String, DiaryEntry?> get milestones {
+    if (_diary.isEmpty) return {};
+    
+    final sortedByDate = List<DiaryEntry>.from(_diary)..sort((a, b) => a.watchedDate.compareTo(b.watchedDate));
+    
+    final firstFilm = sortedByDate.first;
+    final first5Star = sortedByDate.firstWhere((e) => e.rating >= 5.0, orElse: () => firstFilm);
+    final firstRewatch = sortedByDate.firstWhere((e) => e.isRewatch, orElse: () => firstFilm);
+
+    return {
+      'firstFilm': firstFilm,
+      'first5Star': first5Star,
+      'firstRewatch': firstRewatch,
+    };
+  }
+
+  Map<String, dynamic> get streaksAndFacts {
+    if (_diary.isEmpty) return {};
+
+    // Sort by date to find streaks
+    final dates = _diary.map((e) => DateTime(e.watchedDate.year, e.watchedDate.month, e.watchedDate.day)).toSet().toList()..sort();
+    
+    int longestStreak = 0;
+    int currentStreak = 0;
+    DateTime? prevDate;
+
+    for (var date in dates) {
+      if (prevDate == null || date.difference(prevDate).inDays == 1) {
+        currentStreak++;
+      } else {
+        currentStreak = 1;
+      }
+      if (currentStreak > longestStreak) longestStreak = currentStreak;
+      prevDate = date;
+    }
+
+    // Most watched month
+    Map<String, int> monthCounts = {};
+    for (var entry in _diary) {
+      final key = '${entry.watchedDate.year}-${entry.watchedDate.month}';
+      monthCounts[key] = (monthCounts[key] ?? 0) + 1;
+    }
+    final bestMonth = monthCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+    return {
+      'longestStreak': longestStreak,
+      'bestMonth': bestMonth.isNotEmpty ? bestMonth.first.key : 'N/A',
+      'bestMonthCount': bestMonth.isNotEmpty ? bestMonth.first.value : 0,
+      'totalDaysEquivalent': (stats.totalRuntimeMinutes / 1440).toStringAsFixed(1),
+    };
+  }
+
+  // Filtering & Sorting for Films Tab
+  List<DiaryEntry> getFilteredFilms({
+    required String query,
+    required String filter,
+    required String sortBy,
+  }) {
+    var filtered = _diary.where((e) {
+      final matchesQuery = e.title.toLowerCase().contains(query.toLowerCase());
+      if (filter == 'Rewatched') return matchesQuery && e.isRewatch;
+      if (filter == 'Liked') {
+        final movie = getMovieMetadata(e.title, e.year);
+        return matchesQuery && (movie?.isLiked ?? false);
+      }
+      if (filter == 'No Rating') return matchesQuery && e.rating == 0;
+      return matchesQuery;
+    }).toList();
+
+    if (sortBy == 'Title') {
+      filtered.sort((a, b) => a.title.compareTo(b.title));
+    } else if (sortBy == 'Rating') {
+      filtered.sort((a, b) => b.rating.compareTo(a.rating));
+    } else if (sortBy == 'Date watched') {
+      filtered.sort((a, b) => b.watchedDate.compareTo(a.watchedDate));
+    }
+
+    return filtered;
+  }
+
+  Future<void> clearData() async {
+    // Implement database clearing if needed
+    _diary = [];
+    _cachedStats = null;
+    notifyListeners();
+  }
 }
