@@ -31,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildActionGroup([
               _buildActionTile(Icons.upload_file, 'Import CSV', onTap: () => statsProvider.importCSV()),
-              _buildActionTile(Icons.sync, 'Re-sync TMDB', onTap: () {}),
+              _buildActionTile(Icons.sync, 'Re-sync TMDB', onTap: () => statsProvider.resyncMetadata()),
             ]),
             
             const SizedBox(height: 32),
@@ -59,7 +59,7 @@ class SettingsScreen extends StatelessWidget {
             _buildActionGroup([
               _buildValueTile(Icons.dark_mode, 'Appearance', 'Always Dark'),
               _buildValueTile(Icons.info, 'Version', '2.4.0 (Pro)'),
-              _buildActionTile(Icons.logout, 'Log Out', color: Colors.red, onTap: () {}),
+              _buildActionTile(Icons.logout, 'Log Out', color: Colors.red, onTap: () => statsProvider.logout()),
             ]),
             const SizedBox(height: 40),
           ],

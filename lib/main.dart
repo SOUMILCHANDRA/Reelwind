@@ -120,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final statsProvider = context.watch<StatsProvider>();
+    final currentIndex = statsProvider.selectedIndex;
     
     if (statsProvider.diary.isEmpty && !statsProvider.isLoading) {
       return const OnboardingScreen();
@@ -129,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: statsProvider.isLoading 
         ? const Center(child: CircularProgressIndicator(color: Color(0xFF00C030)))
         : IndexedStack(
-            index: _currentIndex,
+            index: currentIndex,
             children: _screens,
           ),
       bottomNavigationBar: Container(
@@ -137,8 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
           border: Border(top: BorderSide(color: Colors.white10, width: 0.5)),
         ),
         child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
+          currentIndex: currentIndex,
+          onTap: (index) => statsProvider.setSelectedIndex(index),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.grid_view), 

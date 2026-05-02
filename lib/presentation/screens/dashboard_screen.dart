@@ -41,11 +41,11 @@ class DashboardScreen extends StatelessWidget {
                   const SizedBox(height: 32),
                   _buildSectionHeader('Your Directors'),
                   const SizedBox(height: 24),
-                  _buildDirectorSection(statsProvider.topDirectors),
+                  _buildDirectorSection(context, statsProvider.topDirectors),
                   const SizedBox(height: 32),
                   _buildSectionHeader('Top Genres'),
                   const SizedBox(height: 16),
-                  _buildGenreSection(statsProvider.topGenres),
+                  _buildGenreSection(context, statsProvider.topGenres),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -141,10 +141,17 @@ class DashboardScreen extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                getTitlesWidget: (val, meta) => Padding(
-                  padding: const EdgeInsets.only(top: 12.0),
-                  child: Text((val / 2).toString(), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                ),
+                getTitlesWidget: (val, meta) {
+                  final rating = val / 2;
+                  // Only show labels for integer ratings (1.0, 2.0, etc.) to avoid squishing
+                  if (rating % 1 == 0 && rating > 0) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: Text(rating.toInt().toString(), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    );
+                  }
+                  return const SizedBox();
+                },
               ),
             ),
             leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -163,7 +170,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDirectorSection(Map<String, int> directors) {
+  Widget _buildDirectorSection(BuildContext context, Map<String, int> directors) {
     final entries = directors.entries.toList();
     final maxVal = entries.isEmpty ? 1 : entries.first.value;
 
@@ -182,7 +189,10 @@ class DashboardScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(e.key, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  GestureDetector(
+                    onTap: () => context.read<StatsProvider>().setGlobalSearch(e.key),
+                    child: Text(e.key, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
                   Text('${e.value} Films', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
@@ -203,7 +213,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGenreSection(Map<String, int> genres) {
+  Widget _buildGenreSection(BuildContext context, Map<String, int> genres) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -213,7 +223,10 @@ class DashboardScreen extends StatelessWidget {
           color: e.value == genres.values.first ? const Color(0xFF00C030) : const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(e.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        child: GestureDetector(
+          onTap: () => context.read<StatsProvider>().setGlobalSearch(e.key),
+          child: Text(e.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+        ),
       )).toList(),
     );
   }

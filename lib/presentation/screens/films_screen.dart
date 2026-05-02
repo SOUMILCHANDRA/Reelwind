@@ -18,11 +18,17 @@ class _FilmsScreenState extends State<FilmsScreen> {
   @override
   Widget build(BuildContext context) {
     final statsProvider = context.watch<StatsProvider>();
+    final query = _searchQuery.isEmpty ? statsProvider.globalSearchQuery : _searchQuery;
+
     final filteredFilms = statsProvider.diary.where((film) {
-      final matchesSearch = film.title.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch = film.title.toLowerCase().contains(query.toLowerCase()) ||
+          (statsProvider.getMovieMetadata(film.title, film.year)?.director?.toLowerCase().contains(query.toLowerCase()) ?? false) ||
+          (statsProvider.getMovieMetadata(film.title, film.year)?.genres.any((g) => g.toLowerCase().contains(query.toLowerCase())) ?? false);
+      
       if (_filter == 'All') return matchesSearch;
       if (_filter == 'Loved') return matchesSearch && film.rating >= 4.5;
       if (_filter == 'Rewatched') return matchesSearch && film.isRewatch;
+      if (_filter == 'Unrated') return matchesSearch && (film.rating == 0.0);
       return matchesSearch;
     }).toList();
 
