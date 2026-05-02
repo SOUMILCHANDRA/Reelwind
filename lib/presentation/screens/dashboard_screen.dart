@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/stats_provider.dart';
+import '../providers/stats_provider.dart';
 import '../widgets/heatmap_view.dart';
 import '../widgets/stats_charts.dart';
 
@@ -9,7 +9,8 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stats = context.watch<StatsProvider>();
+    final statsProvider = context.watch<StatsProvider>();
+    final watchStats = statsProvider.stats;
 
     return Scaffold(
       appBar: AppBar(
@@ -17,38 +18,38 @@ class DashboardScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () => _showSettings(context, stats),
+            onPressed: () => _showSettings(context, statsProvider),
           ),
         ],
       ),
-      body: stats.history.isEmpty
-          ? _buildEmptyState(context, stats)
+      body: statsProvider.diary.isEmpty
+          ? _buildEmptyState(context, statsProvider)
           : RefreshIndicator(
-              onRefresh: () async => await stats.importCSV(),
+              onRefresh: () async => await statsProvider.importCSV(),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSummaryCards(stats),
+                    _buildSummaryCards(watchStats),
                     const SizedBox(height: 24),
                     const Text('Activity Heatmap', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    HeatmapView(data: stats.watchingFrequency),
+                    HeatmapView(data: statsProvider.watchingFrequency),
                     const SizedBox(height: 24),
                     const Text('Rating Distribution', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    SizedBox(height: 200, child: RatingChart(data: stats.ratingDistribution)),
+                    SizedBox(height: 200, child: RatingChart(data: statsProvider.ratingDistribution)),
                     const SizedBox(height: 24),
-                    const Text('Recent Watches', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Recent Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    _buildRecentWatches(stats),
+                    _buildRecentActivity(statsProvider),
                   ],
                 ),
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => stats.importCSV(),
+        onPressed: () => statsProvider.importCSV(),
         label: const Text('Import CSV'),
         icon: const Icon(Icons.upload_file),
       ),
@@ -75,13 +76,13 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCards(StatsProvider stats) {
+  Widget _buildSummaryCards(dynamic watchStats) {
     return Row(
       children: [
         Expanded(
           child: _SummaryCard(
             title: 'Watched',
-            value: stats.history.length.toString(),
+            value: watchStats.totalWatched.toString(),
             subtitle: 'Total Films',
           ),
         ),
@@ -89,7 +90,7 @@ class DashboardScreen extends StatelessWidget {
         Expanded(
           child: _SummaryCard(
             title: 'Average',
-            value: stats.averageRating.toStringAsFixed(1),
+            value: watchStats.averageRating.toStringAsFixed(1),
             subtitle: 'Rating',
           ),
         ),
@@ -97,36 +98,42 @@ class DashboardScreen extends StatelessWidget {
         Expanded(
           child: _SummaryCard(
             title: 'This Year',
-            value: stats.moviesWatchedThisYear.toString(),
-            subtitle: '2026 Watches',
+            value: (watchStats.yearDistribution[DateTime.now().year] ?? 0).toString(),
+            subtitle: '${DateTime.now().year} Watches',
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRecentWatches(StatsProvider stats) {
+  Widget _buildRecentActivity(StatsProvider statsProvider) {
+    final diary = statsProvider.diary;
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: stats.history.length > 5 ? 5 : stats.history.length,
+      itemCount: diary.length > 5 ? 5 : diary.length,
       itemBuilder: (context, index) {
-        final item = stats.history[index];
+        final entry = diary[index];
+        final movie = statsProvider.getMovieMetadata(entry.title, entry.year);
+        
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
-            leading: item.metadata != null
-                ? Image.network(item.metadata!.posterPath, width: 40, fit: BoxFit.cover)
+            leading: movie?.posterUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.network(movie!.posterUrl!, width: 40, fit: BoxFit.cover),
+                  )
                 : const Icon(Icons.movie),
-            title: Text(item.entry.name),
-            subtitle: Text('${item.entry.year} • ${item.entry.date}'),
-            trailing: item.entry.rating != null
+            title: Text(entry.title),
+            subtitle: Text('${entry.year} • Watched on ${_formatDate(entry.watchedDate)}'),
+            trailing: entry.rating > 0
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.star, color: Color(0xFF00E054), size: 16),
                       const SizedBox(width: 4),
-                      Text(item.entry.rating.toString()),
+                      Text(entry.rating.toString()),
                     ],
                   )
                 : null,
@@ -134,6 +141,10 @@ class DashboardScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   void _showSettings(BuildContext context, StatsProvider stats) {
