@@ -220,4 +220,46 @@ class StatsProvider with ChangeNotifier {
     }
     return dist;
   }
+
+  Map<String, int> get topDirectors {
+    Map<String, int> directors = {};
+    for (var entry in _diary) {
+      final movie = getMovieMetadata(entry.title, entry.year);
+      if (movie?.director != null) {
+        directors[movie!.director!] = (directors[movie.director!] ?? 0) + 1;
+      }
+    }
+    // Sort and take top 8
+    final sorted = directors.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    return Map.fromEntries(sorted.take(8));
+  }
+
+  Map<String, int> get topGenres {
+    Map<String, int> genres = {};
+    for (var entry in _diary) {
+      final movie = getMovieMetadata(entry.title, entry.year);
+      if (movie != null) {
+        for (var genre in movie.genres) {
+          genres[genre] = (genres[genre] ?? 0) + 1;
+        }
+      }
+    }
+    // Sort and take top 6
+    final sorted = genres.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    return Map.fromEntries(sorted.take(6));
+  }
+
+  Map<String, int> get yearComparison {
+    final now = DateTime.now();
+    final thisYear = now.year;
+    final lastYear = thisYear - 1;
+
+    int thisYearCount = _diary.where((e) => e.watchedDate.year == thisYear).length;
+    int lastYearCount = _diary.where((e) => e.watchedDate.year == lastYear).length;
+
+    return {
+      'thisYear': thisYearCount,
+      'lastYear': lastYearCount,
+    };
+  }
 }
