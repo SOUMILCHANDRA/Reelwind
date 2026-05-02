@@ -35,12 +35,11 @@ class ReelwindApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00C030), // Letterboxd Green
+          seedColor: const Color(0xFF00C030),
           brightness: Brightness.dark,
           primary: const Color(0xFF00C030),
           secondary: const Color(0xFF00C030),
           surface: const Color(0xFF1a1a1a),
-          background: const Color(0xFF0d0d0d),
         ),
         scaffoldBackgroundColor: const Color(0xFF0d0d0d),
         appBarTheme: const AppBarTheme(
@@ -54,7 +53,7 @@ class ReelwindApp extends StatelessWidget {
             letterSpacing: 2,
           ),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: const Color(0xFF1a1a1a),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -92,16 +91,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final statsProvider = context.watch<StatsProvider>();
     
-    // Show onboarding if no data
     if (statsProvider.diary.isEmpty && !statsProvider.isLoading) {
       return const OnboardingScreen();
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: statsProvider.isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),

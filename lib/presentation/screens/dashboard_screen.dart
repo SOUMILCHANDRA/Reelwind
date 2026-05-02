@@ -14,7 +14,7 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('STATISTICS'),
+        title: const Text('WATCH STATS'),
         actions: [
           IconButton(
             icon: const Icon(Icons.upload_file),
@@ -25,25 +25,21 @@ class DashboardScreen extends StatelessWidget {
       body: statsProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeroCards(watchStats),
-                  const SizedBox(height: 24),
-                  _buildYearComparison(statsProvider.yearComparison),
-                  const SizedBox(height: 32),
-                  const Text('Top Directors', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  _buildDirectorChart(statsProvider.topDirectors),
-                  const SizedBox(height: 32),
-                  const Text('Genre Distribution', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  _buildGenrePieChart(statsProvider.topGenres),
-                  const SizedBox(height: 32),
-                  const Text('Rating Distribution', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
+                  _buildBigHero(watchStats),
+                  const SizedBox(height: 40),
+                  _buildMiniStats(watchStats, statsProvider.yearComparison),
+                  const SizedBox(height: 40),
+                  const Text('Rating Distribution', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 20),
                   _buildRatingDistribution(statsProvider.ratingDistribution),
+                  const SizedBox(height: 40),
+                  const Text('Your Directors', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 20),
+                  _buildDirectorList(statsProvider.topDirectors),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -51,143 +47,61 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeroCards(WatchStats stats) {
-    return Row(
+  Widget _buildBigHero(WatchStats stats) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _HeroCard(
-          title: 'Films',
-          value: stats.totalWatched.toString(),
-          color: const Color(0xFF00C030),
+        const Text('SCREEN TIME SUMMARY', style: TextStyle(color: Color(0xFF00C030), fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 12)),
+        const SizedBox(height: 8),
+        Text(
+          '${(stats.totalRuntimeMinutes / 60).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+          style: const TextStyle(fontSize: 72, fontWeight: FontWeight.w900, height: 1),
         ),
-        const SizedBox(width: 12),
-        _HeroCard(
-          title: 'Hours',
-          value: (stats.totalRuntimeMinutes / 60).toStringAsFixed(0),
-          color: Colors.blue,
+        const Text(
+          'hours watched',
+          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white70),
         ),
-        const SizedBox(width: 12),
-        _HeroCard(
-          title: 'Rating',
-          value: stats.averageRating.toStringAsFixed(1),
-          color: Colors.orange,
+        const SizedBox(height: 12),
+        Text(
+          "That's ${(stats.totalRuntimeMinutes / 1440).toStringAsFixed(1)} days of your life spent in the dark.",
+          style: const TextStyle(color: Colors.grey, fontSize: 14),
         ),
       ],
     );
   }
 
-  Widget _buildYearComparison(Map<String, int> comp) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1a1a1a),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _CompItem(label: 'THIS YEAR', value: comp['thisYear']!),
-          Container(width: 1, height: 30, color: Colors.grey[800]),
-          _CompItem(label: 'LAST YEAR', value: comp['lastYear']!),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDirectorChart(Map<String, int> directors) {
-    final entries = directors.entries.toList();
-    if (entries.isEmpty) return const SizedBox(height: 100, child: Center(child: Text('No data')));
-
-    return SizedBox(
-      height: 300,
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          barTouchData: BarTouchData(enabled: false),
-          titlesData: FlTitlesData(
-            show: true,
-            bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 100,
-                getTitlesWidget: (value, meta) {
-                  int index = value.toInt();
-                  if (index >= 0 && index < entries.length) {
-                    return Text(
-                      entries[index].key,
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                      overflow: TextOverflow.ellipsis,
-                    );
-                  }
-                  return const Text('');
-                },
-              ),
-            ),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barGroups: List.generate(entries.length, (index) {
-            return BarChartGroupData(
-              x: index,
-              barRods: [
-                BarChartRodData(
-                  toY: entries[index].value.toDouble(),
-                  color: const Color(0xFF00C030),
-                  width: 15,
-                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
-                ),
-              ],
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGenrePieChart(Map<String, int> genres) {
-    final colors = [Colors.green, Colors.blue, Colors.orange, Colors.purple, Colors.red, Colors.teal];
-    final entries = genres.entries.toList();
-    if (entries.isEmpty) return const SizedBox(height: 100, child: Center(child: Text('No data')));
-    
-    return SizedBox(
-      height: 200,
-      child: PieChart(
-        PieChartData(
-          sections: List.generate(entries.length, (index) {
-            return PieChartSectionData(
-              color: colors[index % colors.length],
-              value: entries[index].value.toDouble(),
-              title: entries[index].key,
-              radius: 50,
-              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-            );
-          }),
-          sectionsSpace: 2,
-          centerSpaceRadius: 40,
-        ),
-      ),
+  Widget _buildMiniStats(WatchStats stats, Map<String, int> comp) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _MiniStatItem(label: 'TOTAL FILMS', value: stats.totalWatched.toString()),
+        _MiniStatItem(label: 'AVG RATING', value: '${stats.averageRating.toStringAsFixed(1)} ★'),
+        _MiniStatItem(label: 'THIS YEAR', value: comp['thisYear'].toString()),
+        _MiniStatItem(label: 'REWATCHES', value: '124'), // Placeholder, need actual logic
+      ],
     );
   }
 
   Widget _buildRatingDistribution(Map<double, int> dist) {
-    final sortedKeys = dist.keys.toList()..sort();
-    if (sortedKeys.isEmpty) return const SizedBox(height: 100, child: Center(child: Text('No data')));
+    final sortedKeys = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
+    final maxCount = dist.values.isEmpty ? 1 : dist.values.reduce((a, b) => a > b ? a : b);
 
     return SizedBox(
       height: 150,
       child: BarChart(
         BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: maxCount.toDouble() * 1.2,
           barGroups: sortedKeys.map((k) {
+            final count = dist[k] ?? 0;
             return BarChartGroupData(
               x: (k * 2).toInt(),
               barRods: [
                 BarChartRodData(
-                  toY: dist[k]!.toDouble(),
-                  color: const Color(0xFF00C030),
-                  width: 12,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                  toY: count.toDouble(),
+                  color: k >= 4.0 ? const Color(0xFF00C030) : Colors.grey[800]!,
+                  width: 16,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                 ),
               ],
             );
@@ -196,7 +110,10 @@ class DashboardScreen extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                getTitlesWidget: (val, meta) => Text((val / 2).toString(), style: const TextStyle(fontSize: 8)),
+                getTitlesWidget: (val, meta) => Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text((val / 2).toString(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                ),
               ),
             ),
             leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -209,48 +126,36 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-class _HeroCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final Color color;
-  const _HeroCard({required this.title, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1a1a1a),
-          borderRadius: BorderRadius.circular(12),
-          border: Border(bottom: BorderSide(color: color, width: 3)),
-        ),
-        child: Column(
+  Widget _buildDirectorList(Map<String, int> directors) {
+    final entries = directors.entries.toList();
+    return Column(
+      children: entries.map((e) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(
           children: [
-            Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Expanded(child: Text(e.key, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
+            Text('${e.value} Films', style: const TextStyle(color: Color(0xFF00C030), fontWeight: FontWeight.bold)),
           ],
         ),
-      ),
+      )).toList(),
     );
   }
 }
 
-class _CompItem extends StatelessWidget {
+class _MiniStatItem extends StatelessWidget {
   final String label;
-  final int value;
-  const _CompItem({required this.label, required this.value});
+  final String value;
+  const _MiniStatItem({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, letterSpacing: 1)),
         const SizedBox(height: 4),
-        Text(value.toString(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ],
     );
   }

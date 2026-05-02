@@ -14,7 +14,6 @@ dependencies:
 
   # Visualization
   fl_chart: ^0.66.0
-  fl_heatmap: ^1.1.0
 
   # Data Parsing
   file_picker: ^8.0.0+1

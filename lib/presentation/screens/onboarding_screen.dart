@@ -68,7 +68,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildImportPage(BuildContext context) {
-    final statsProvider = context.watch<StatsProvider>();
+    final statsProvider = context.read<StatsProvider>();
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(

@@ -12,6 +12,7 @@ class HeatmapScreen extends StatefulWidget {
 
 class _HeatmapScreenState extends State<HeatmapScreen> {
   int? _selectedYear;
+  DateTime _focusedDate = DateTime.now();
 
   @override
   void initState() {
@@ -28,19 +29,17 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
       _selectedYear = years.first;
     }
 
-    final yearDiary = statsProvider.diary.where((e) => e.watchedDate.year == _selectedYear).toList();
-    final yearStats = statsProvider.calculateStatsFor(yearDiary);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ACTIVITY'),
+        title: const Text('REELWIND'),
+        leading: const Icon(Icons.menu),
         actions: [
           if (years.isNotEmpty)
             DropdownButton<int>(
               value: _selectedYear,
               dropdownColor: const Color(0xFF1a1a1a),
               underline: const SizedBox(),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
               items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
               onChanged: (val) => setState(() => _selectedYear = val),
             ),
@@ -48,39 +47,148 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Watching History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(_selectedYear.toString(), style: const TextStyle(color: Color(0xFF00C030), fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: GestureDetector(
                 onTapDown: (details) => _handleHeatmapTap(context, details, statsProvider, _selectedYear!),
                 child: CustomPaint(
-                  size: const Size(53 * 14.0, 7 * 14.0), // 12px + 2px gap
+                  size: const Size(53 * 14.0, 7 * 14.0),
                   painter: GitHubHeatmapPainter(
                     data: statsProvider.watchingFrequency,
                     year: _selectedYear ?? DateTime.now().year,
+                    focusedDate: _focusedDate,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            _buildSummaryRow(yearDiary.length, yearStats.totalRuntimeMinutes),
+            const SizedBox(height: 32),
+            _buildOnThisDaySection(statsProvider),
+            const SizedBox(height: 32),
+            _buildStreakCard(statsProvider),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSummaryRow(int count, int minutes) {
-    final hours = (minutes / 60).toStringAsFixed(0);
-    final avgPerWeek = (count / 52).toStringAsFixed(1);
+  Widget _buildOnThisDaySection(StatsProvider provider) {
+    final dayMovies = provider.diary.where((e) {
+      return e.watchedDate.year == _focusedDate.year &&
+             e.watchedDate.month == _focusedDate.month &&
+             e.watchedDate.day == _focusedDate.day;
+    }).toList();
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Text(
-        '$count films · $hours hours · $avgPerWeek avg per week',
-        style: const TextStyle(color: Colors.grey, fontSize: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(
+                'On this day',
+                style: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.bold, letterSpacing: 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (dayMovies.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: const Color(0xFF1a1a1a), borderRadius: BorderRadius.circular(12)),
+              child: const Center(child: Text('No films watched on this day', style: TextStyle(color: Colors.grey))),
+            )
+          else
+            SizedBox(
+              height: 200,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: dayMovies.length,
+                itemBuilder: (context, index) {
+                  final entry = dayMovies[index];
+                  final movie = provider.getMovieMetadata(entry.title, entry.year);
+                  return Container(
+                    width: 140,
+                    margin: const EdgeInsets.only(right: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: movie?.posterUrl != null
+                                ? Image.network(movie!.posterUrl!, fit: BoxFit.cover, width: double.infinity)
+                                : Container(color: Colors.grey[900], child: const Icon(Icons.movie)),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(entry.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Row(
+                          children: [
+                            const Icon(Icons.star, size: 10, color: Color(0xFF00C030)),
+                            const SizedBox(width: 4),
+                            Text(entry.rating.toString(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStreakCard(StatsProvider provider) {
+    final facts = provider.streaksAndFacts;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [const Color(0xFF1a1a1a), Colors.grey[900]!]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Your longest streak', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(height: 4),
+              const Text('Keep it up, you\'re on fire!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            ],
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('${facts['longestStreak']}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF00C030))),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 6, left: 4),
+                child: Text('DAYS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -95,84 +203,25 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
 
     if (week >= 0 && week < 53 && day >= 0 && day < 7) {
       final startDate = DateTime(year, 1, 1);
-      // Find the first Sunday (or Monday) of the year to align grid
       final firstDayOfYear = DateTime(year, 1, 1);
       final offset = firstDayOfYear.weekday % 7;
       final tappedDate = startDate.add(Duration(days: (week * 7 + day) - offset));
 
       if (tappedDate.year == year) {
-        _showDayDetails(context, tappedDate, provider);
+        setState(() {
+          _focusedDate = tappedDate;
+        });
       }
     }
-  }
-
-  void _showDayDetails(BuildContext context, DateTime date, StatsProvider provider) {
-    final dayMovies = provider.diary.where((e) {
-      return e.watchedDate.year == date.year &&
-             e.watchedDate.month == date.month &&
-             e.watchedDate.day == date.day;
-    }).toList();
-
-    if (dayMovies.isEmpty) return;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1a1a1a),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${date.day}/${date.month}/${date.year}',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF00C030)),
-              ),
-              const SizedBox(height: 16),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: dayMovies.length,
-                  itemBuilder: (context, index) {
-                    final entry = dayMovies[index];
-                    final movie = provider.getMovieMetadata(entry.title, entry.year);
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: movie?.posterUrl != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Image.network(movie!.posterUrl!, width: 40, height: 60, fit: BoxFit.cover),
-                            )
-                          : const Icon(Icons.movie, size: 40),
-                      title: Text(entry.title),
-                      subtitle: Text('${entry.year}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star, color: Color(0xFF00C030), size: 16),
-                          const SizedBox(width: 4),
-                          Text(entry.rating.toString()),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 
 class GitHubHeatmapPainter extends CustomPainter {
   final Map<DateTime, int> data;
   final int year;
+  final DateTime focusedDate;
 
-  GitHubHeatmapPainter({required this.data, required this.year});
+  GitHubHeatmapPainter({required this.data, required this.year, required this.focusedDate});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -193,7 +242,25 @@ class GitHubHeatmapPainter extends CustomPainter {
         } else {
           final cleanDate = DateTime(date.year, date.month, date.day);
           final count = data[cleanDate] ?? 0;
+          
+          final isFocused = cleanDate.year == focusedDate.year && 
+                            cleanDate.month == focusedDate.month && 
+                            cleanDate.day == focusedDate.day;
+
           paint.color = _getColorForCount(count);
+          
+          if (isFocused) {
+            paint.strokeWidth = 2;
+            paint.style = PaintingStyle.stroke;
+            final rect = Rect.fromLTWH(
+              week * (cellSize + gap) - 1,
+              day * (cellSize + gap) - 1,
+              cellSize + 2,
+              cellSize + 2,
+            );
+            canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(3)), Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 1);
+            paint.style = PaintingStyle.fill;
+          }
         }
 
         final rect = Rect.fromLTWH(
@@ -219,5 +286,6 @@ class GitHubHeatmapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(GitHubHeatmapPainter oldDelegate) => oldDelegate.year != year || oldDelegate.data != data;
+  bool shouldRepaint(GitHubHeatmapPainter oldDelegate) => 
+    oldDelegate.year != year || oldDelegate.data != data || oldDelegate.focusedDate != focusedDate;
 }
