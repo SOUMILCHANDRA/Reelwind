@@ -1,0 +1,46 @@
+name: reelwind
+description: A personal Letterboxd movie-watching dashboard.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  provider: ^6.1.2
+
+  # Visualization
+  fl_chart: ^0.66.0
+  fl_heatmap: ^1.1.0
+
+  # Data Parsing
+  file_picker: ^8.0.0+1
+  csv: ^6.0.0
+  xml: ^6.5.0
+
+  # Networking & Images
+  http: ^1.2.1
+  cached_network_image: ^3.3.1
+  flutter_dotenv: ^5.1.0
+
+  # Persistence
+  sqflite: ^2.3.2
+  path: ^1.9.0
+
+  # UI Enhancement
+  shimmer: ^3.0.0
+  intl: ^0.19.0
+  share_plus: ^9.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
