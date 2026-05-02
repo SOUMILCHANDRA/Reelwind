@@ -1,4 +1,3 @@
-import 'package:fl_heatmap/fl_heatmap.dart';
 import 'package:flutter/material.dart';
 
 class HeatmapView extends StatelessWidget {
@@ -8,52 +7,113 @@ class HeatmapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (data.isEmpty) {
-      return Container(
-        height: 100,
-        decoration: BoxDecoration(
-          color: const Color(0xFF2C3440),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Center(child: Text('No activity data', style: TextStyle(color: Colors.grey))),
-      );
-    }
-
-    // Prepare data for fl_heatmap
-    // We'll show the last 6 months
-    final now = DateTime.now();
-    final startDate = now.subtract(const Duration(days: 180));
-    
-    List<HeatMapItem> items = [];
-    for (int i = 0; i <= 180; i++) {
-      final date = startDate.add(Duration(days: i));
-      final cleanDate = DateTime(date.year, date.month, date.day);
-      final count = data[cleanDate] ?? 0;
-      
-      items.add(HeatMapItem(
-        value: count.toDouble(),
-        xAxis: (i / 7).floor().toDouble(), // Weeks
-        yAxis: (i % 7).toDouble(), // Days
-      ));
-    }
-
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF2C3440),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: HeatMap(
-        dataGroups: [
-          HeatMapGroup(
-            items: items,
-            color: const Color(0xFF00E054),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 130,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: HeatmapPainter(data: data),
+            ),
           ),
+          const SizedBox(height: 8),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text('Less', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              SizedBox(width: 4),
+              _HeatBox(level: 0),
+              _HeatBox(level: 1),
+              _HeatBox(level: 2),
+              _HeatBox(level: 3),
+              _HeatBox(level: 4),
+              SizedBox(width: 4),
+              Text('More', style: TextStyle(fontSize: 10, color: Colors.grey)),
+            ],
+          )
         ],
-        showCellText: false,
-        indicatorBuilder: (context, value) {
-          return Text(value.toInt().toString(), style: const TextStyle(fontSize: 8));
-        },
+      ),
+    );
+  }
+}
+
+class HeatmapPainter extends CustomPainter {
+  final Map<DateTime, int> data;
+
+  HeatmapPainter({required this.data});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final now = DateTime.now();
+    final startDate = now.subtract(const Duration(days: 182)); // ~26 weeks
+    
+    const double spacing = 3.0;
+    final double cellSize = (size.width - (26 * spacing)) / 26;
+    
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    for (int week = 0; week < 26; week++) {
+      for (int day = 0; day < 7; day++) {
+        final date = startDate.add(Duration(days: week * 7 + day));
+        final cleanDate = DateTime(date.year, date.month, date.day);
+        final count = data[cleanDate] ?? 0;
+
+        paint.color = _getColorForCount(count);
+        
+        final rect = Rect.fromLTWH(
+          week * (cellSize + spacing),
+          day * (cellSize + spacing),
+          cellSize,
+          cellSize,
+        );
+        
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+          paint,
+        );
+      }
+    }
+  }
+
+  Color _getColorForCount(int count) {
+    if (count == 0) return const Color(0xFF1B2228);
+    if (count == 1) return const Color(0xFF004018);
+    if (count == 2) return const Color(0xFF006D31);
+    if (count == 3) return const Color(0xFF00A647);
+    return const Color(0xFF00E054); // Max Letterboxd Green
+  }
+
+  @override
+  bool shouldRepaint(covariant HeatmapPainter oldDelegate) => oldDelegate.data != data;
+}
+
+class _HeatBox extends StatelessWidget {
+  final int level;
+  const _HeatBox({required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = [
+      const Color(0xFF1B2228),
+      const Color(0xFF004018),
+      const Color(0xFF006D31),
+      const Color(0xFF00A647),
+      const Color(0xFF00E054),
+    ];
+    return Container(
+      width: 10,
+      height: 10,
+      margin: const EdgeInsets.symmetric(horizontal: 1),
+      decoration: BoxDecoration(
+        color: colors[level],
+        borderRadius: BorderRadius.circular(1),
       ),
     );
   }

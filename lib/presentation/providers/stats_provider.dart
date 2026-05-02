@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../domain/models.dart';
@@ -7,17 +8,21 @@ import '../../data/tmdb_client.dart';
 import '../../data/sqlite_repository.dart';
 
 class StatsProvider with ChangeNotifier {
-  final CSVParser _csvParser = CSVParser();
   final TMDBClient _tmdbClient = TMDBClient();
   final SQLiteRepository _repository = SQLiteRepository();
 
   List<DiaryEntry> _diary = [];
   Map<String, Movie> _movieMetadata = {};
+  WatchStats? _cachedStats;
   bool _isLoading = false;
   bool _isApiEnabled = false;
   int _enrichmentProgress = 0;
   int _totalToEnrich = 0;
   String _enrichmentMessage = '';
+
+  StatsProvider() {
+    _loadFromCache();
+  }
 
   List<DiaryEntry> get diary => _diary;
   bool get isLoading => _isLoading;
@@ -25,6 +30,17 @@ class StatsProvider with ChangeNotifier {
   int get enrichmentProgress => _enrichmentProgress;
   int get totalToEnrich => _totalToEnrich;
   String get enrichmentMessage => _enrichmentMessage;
+
+  Future<void> _loadFromCache() async {
+    _isLoading = true;
+    notifyListeners();
+    
+    _diary = await _repository.getDiaryEntries();
+    _cachedStats = await _repository.getStats();
+    
+    _isLoading = false;
+    notifyListeners();
+  }
 
   void toggleApi(bool value) {
     _isApiEnabled = value;
@@ -45,25 +61,30 @@ class StatsProvider with ChangeNotifier {
         final platformFile = result.files.single;
         final file = File(platformFile.path!);
         final fileName = platformFile.name.toLowerCase();
+        final content = await file.readAsString();
 
         List<DiaryEntry> newEntries = [];
         if (fileName.contains('diary')) {
-          newEntries = await _csvParser.parseDiaryCSV(file);
+          newEntries = await compute(CSVParser.parseDiaryCSV, content);
         } else if (fileName.contains('watched')) {
-          newEntries = await _csvParser.parseWatchedCSV(file);
+          newEntries = await compute(CSVParser.parseWatchedCSV, content);
         } else if (fileName.contains('ratings')) {
-          newEntries = await _csvParser.parseRatingsCSV(file);
+          newEntries = await compute(CSVParser.parseRatingsCSV, content);
         } else {
-          // Fallback to diary parsing if unknown
-          newEntries = await _csvParser.parseDiaryCSV(file);
+          newEntries = await compute(CSVParser.parseDiaryCSV, content);
         }
 
-        // Merge entries if needed, or replace
-        // For simplicity, we'll replace for now, but in a real app we might merge
         _diary = newEntries;
+        await _repository.saveDiaryEntries(_diary);
         
         if (_isApiEnabled) {
           await _enrichMetadata();
+        }
+
+        // Pre-compute and cache stats
+        _cachedStats = _calculateStats();
+        if (_cachedStats != null) {
+          await _repository.saveStats(_cachedStats!);
         }
       } catch (e) {
         print('Import error: $e');
@@ -72,6 +93,35 @@ class StatsProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  WatchStats _calculateStats() {
+    final total = _diary.length;
+    final avgRating = total == 0 ? 0.0 : _diary.map((e) => e.rating).reduce((a, b) => a + b) / total;
+    
+    Map<int, int> years = {};
+    Map<String, int> genres = {};
+    int totalRuntime = 0;
+
+    for (var entry in _diary) {
+      years[entry.watchedDate.year] = (years[entry.watchedDate.year] ?? 0) + 1;
+      
+      final movie = getMovieMetadata(entry.title, entry.year);
+      if (movie != null) {
+        totalRuntime += movie.runtimeMinutes ?? 0;
+        for (var genre in movie.genres) {
+          genres[genre] = (genres[genre] ?? 0) + 1;
+        }
+      }
+    }
+
+    return WatchStats(
+      totalWatched: total,
+      averageRating: avgRating,
+      yearDistribution: years,
+      genreDistribution: genres,
+      totalRuntimeMinutes: totalRuntime,
+    );
   }
 
   Future<void> _enrichMetadata() async {

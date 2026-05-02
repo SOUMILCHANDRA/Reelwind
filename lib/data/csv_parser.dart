@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 import '../domain/models.dart';
 
 class CSVParser {
-  Future<List<DiaryEntry>> parseDiaryCSV(File file) async {
-    final fields = await _getFields(file);
+  static List<DiaryEntry> parseDiaryCSV(String content) {
+    final fields = const CsvToListConverter().convert(content);
     if (fields.isEmpty) return [];
 
     final Set<String> seen = {};
@@ -36,8 +36,8 @@ class CSVParser {
     return entries;
   }
 
-  Future<List<DiaryEntry>> parseWatchedCSV(File file) async {
-    final fields = await _getFields(file);
+  static List<DiaryEntry> parseWatchedCSV(String content) {
+    final fields = const CsvToListConverter().convert(content);
     if (fields.isEmpty) return [];
 
     return fields.skip(1).map((row) {
@@ -52,8 +52,8 @@ class CSVParser {
     }).toList();
   }
 
-  Future<List<DiaryEntry>> parseRatingsCSV(File file) async {
-    final fields = await _getFields(file);
+  static List<DiaryEntry> parseRatingsCSV(String content) {
+    final fields = const CsvToListConverter().convert(content);
     if (fields.isEmpty) return [];
 
     return fields.skip(1).map((row) {
@@ -68,17 +68,8 @@ class CSVParser {
     }).toList();
   }
 
-  Future<List<List<dynamic>>> _getFields(File file) async {
-    final input = file.openRead();
-    return await input
-        .transform(utf8.decoder)
-        .transform(const CsvToListConverter())
-        .toList();
-  }
-
-  DateTime _parseDate(String dateStr) {
+  static DateTime _parseDate(String dateStr) {
     try {
-      // Letterboxd uses YYYY-MM-DD
       return DateFormat('yyyy-MM-dd').parse(dateStr);
     } catch (e) {
       return DateTime.now();

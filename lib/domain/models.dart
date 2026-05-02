@@ -14,6 +14,28 @@ class DiaryEntry {
     required this.isRewatch,
     this.letterboxdUri,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'year': year,
+      'watchedDate': watchedDate.toIso8601String(),
+      'rating': rating,
+      'isRewatch': isRewatch ? 1 : 0,
+      'letterboxdUri': letterboxdUri,
+    };
+  }
+
+  factory DiaryEntry.fromMap(Map<String, dynamic> map) {
+    return DiaryEntry(
+      title: map['title'],
+      year: map['year'],
+      watchedDate: DateTime.parse(map['watchedDate']),
+      rating: map['rating'],
+      isRewatch: map['isRewatch'] == 1,
+      letterboxdUri: map['letterboxdUri'],
+    );
+  }
 }
 
 class Movie {
@@ -87,4 +109,40 @@ class WatchStats {
     required this.genreDistribution,
     required this.totalRuntimeMinutes,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'totalWatched': totalWatched,
+      'averageRating': averageRating,
+      'yearDistribution': yearDistribution.entries.map((e) => '${e.key}:${e.value}').join(','),
+      'genreDistribution': genreDistribution.entries.map((e) => '${e.key}:${e.value}').join(','),
+      'totalRuntimeMinutes': totalRuntimeMinutes,
+    };
+  }
+
+  factory WatchStats.fromMap(Map<String, dynamic> map) {
+    return WatchStats(
+      totalWatched: map['totalWatched'],
+      averageRating: map['averageRating'],
+      yearDistribution: _parseMap(map['yearDistribution']),
+      genreDistribution: _parseMapString(map['genreDistribution']),
+      totalRuntimeMinutes: map['totalRuntimeMinutes'],
+    );
+  }
+
+  static Map<int, int> _parseMap(String str) {
+    if (str.isEmpty) return {};
+    return Map.fromEntries(str.split(',').map((s) {
+      final parts = s.split(':');
+      return MapEntry(int.parse(parts[0]), int.parse(parts[1]));
+    }));
+  }
+
+  static Map<String, int> _parseMapString(String str) {
+    if (str.isEmpty) return {};
+    return Map.fromEntries(str.split(',').map((s) {
+      final parts = s.split(':');
+      return MapEntry(parts[0], int.parse(parts[1]));
+    }));
+  }
 }
