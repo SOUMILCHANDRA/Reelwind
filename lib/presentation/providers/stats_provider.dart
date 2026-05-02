@@ -21,6 +21,7 @@ class StatsProvider with ChangeNotifier {
   String _enrichmentMessage = '';
 
   StatsProvider() {
+    _isApiEnabled = dotenv.env['TMDB_API_KEY']?.isNotEmpty ?? false;
     _loadFromCache();
   }
 
@@ -82,8 +83,13 @@ class StatsProvider with ChangeNotifier {
         _diary = newEntries;
         await _repository.saveDiaryEntries(_diary);
         
+        print('Imported ${_diary.length} entries.');
+        
         if (_isApiEnabled) {
+          print('Starting enrichment...');
           await _enrichMetadata();
+        } else {
+          print('API enrichment disabled.');
         }
 
         // Pre-compute and cache stats
@@ -93,10 +99,10 @@ class StatsProvider with ChangeNotifier {
         }
       } catch (e) {
         print('Import error: $e');
+      } finally {
+        _isLoading = false;
+        notifyListeners();
       }
-
-      _isLoading = false;
-      notifyListeners();
     }
   }
 

@@ -11,15 +11,21 @@ class TMDBClient {
     if (_apiKey == null || _apiKey!.isEmpty) return null;
 
     try {
-      final response = await http.get(Uri.parse(
-          '$_baseUrl/search/movie?api_key=$_apiKey&query=${Uri.encodeComponent(title)}&year=$year'));
+      final url = '$_baseUrl/search/movie?api_key=$_apiKey&query=${Uri.encodeComponent(title)}&year=$year';
+      print('Searching TMDB: $title ($year)');
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['results'].isNotEmpty) {
           final int id = data['results'][0]['id'];
+          print('Found film ID: $id');
           return await _fetchFullDetails(id);
+        } else {
+          print('No results found for $title ($year)');
         }
+      } else {
+        print('TMDB Search Error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       print('TMDB Client Error: $e');
