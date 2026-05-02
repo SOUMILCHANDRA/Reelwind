@@ -1,17 +1,60 @@
-# reelwind
+# Reelwind 🎬✨
 
-A new Flutter project.
+**The ultimate cinematic dashboard for Letterboxd power users.**
 
-## Getting Started
+Reelwind is a high-fidelity desktop application built with Flutter that transforms your raw Letterboxd data into a stunning, interactive cinematic experience.
 
-This project is a starting point for a Flutter application.
+![Reelwind Hero](https://github.com/SOUMILCHANDRA/Reelwind/raw/main/assets/hero_preview.png) *(Preview coming soon)*
 
-A few resources to get you started if this is your first Flutter project:
+## 🚀 Key Features
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- **Deep Letterboxd Integration**: Import and unify your `diary.csv`, `ratings.csv`, `watched.csv`, and `reviews.csv` into a single source of truth.
+- **TMDB Enrichment**: Automatically fetches high-res posters, director bios, genres, and runtimes using the TMDB API.
+- **Intelligent Drill-Downs**: Click any Genre or Director on your dashboard to instantly explore your library.
+- **Privacy First**: Your data stays on your machine. Reelwind uses a local SQLite database for maximum speed and security.
+- **Modern Aesthetics**: A premium, neon-noir inspired dark mode designed for movie lovers.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🛠️ Technology Stack
+
+- **Framework**: [Flutter](https://flutter.dev) (Windows Desktop)
+- **Database**: [SQLite (FFI)](https://pub.dev/packages/sqflite_common_ffi)
+- **API**: [The Movie Database (TMDB)](https://www.themoviedb.org/documentation/api)
+- **State Management**: Provider
+
+## 🏁 Getting Started
+
+### Prerequisites
+- Flutter SDK installed and configured for Windows.
+- A TMDB API Read Access Token (Bearer Token).
+
+### Setup
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/SOUMILCHANDRA/Reelwind.git
+   cd reelwind
+   ```
+
+2. **Configure Environment**:
+   Create a `.env` file in the root directory:
+   ```env
+   TMDB_ACCESS_TOKEN=your_bearer_token_here
+   ```
+
+3. **Install Dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+4. **Launch Reelwind**:
+   ```bash
+   flutter run -d windows
+   ```
+
+## 🛡️ Security
+Reelwind is designed with security in mind. All sensitive keys are stored in a local `.env` file which is automatically ignored by version control.
+
+## 🤝 Contributing
+Contributions are welcome! If you have ideas for new metrics, charts, or UI improvements, feel free to open a PR.
+
+---
+*Built with ❤️ for the cinematic community.*
