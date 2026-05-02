@@ -96,14 +96,18 @@ class StatsProvider with ChangeNotifier {
   }
 
   WatchStats _calculateStats() {
-    final total = _diary.length;
-    final avgRating = total == 0 ? 0.0 : _diary.map((e) => e.rating).reduce((a, b) => a + b) / total;
+    return calculateStatsFor(_diary);
+  }
+
+  WatchStats calculateStatsFor(List<DiaryEntry> subset) {
+    final total = subset.length;
+    final avgRating = total == 0 ? 0.0 : subset.map((e) => e.rating).reduce((a, b) => a + b) / total;
     
     Map<int, int> years = {};
     Map<String, int> genres = {};
     int totalRuntime = 0;
 
-    for (var entry in _diary) {
+    for (var entry in subset) {
       years[entry.watchedDate.year] = (years[entry.watchedDate.year] ?? 0) + 1;
       
       final movie = getMovieMetadata(entry.title, entry.year);
