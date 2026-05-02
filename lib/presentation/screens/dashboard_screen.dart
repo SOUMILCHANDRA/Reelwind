@@ -60,7 +60,7 @@ class DashboardScreen extends StatelessWidget {
         Text(title, style: GoogleFonts.newsreader(fontSize: 24, fontWeight: FontWeight.w500, color: Colors.white)),
         if (trailing != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, py: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(20)),
             child: Text(trailing, style: const TextStyle(fontSize: 10, color: Color(0xFF8A8A8A))),
           ),

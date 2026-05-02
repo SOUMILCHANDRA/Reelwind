@@ -138,7 +138,7 @@ class _FilmsScreenState extends State<FilmsScreen> {
             height: 68,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
-              color: Colors.neutral[800],
+              color: Colors.grey[800],
               image: movie?.posterUrl != null ? DecorationImage(image: NetworkImage(movie!.posterUrl!), fit: BoxFit.cover) : null,
             ),
           ),

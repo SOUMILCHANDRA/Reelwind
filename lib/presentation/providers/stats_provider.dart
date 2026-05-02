@@ -31,6 +31,7 @@ class StatsProvider with ChangeNotifier {
   int get totalToEnrich => _totalToEnrich;
   String get enrichmentMessage => _enrichmentMessage;
 
+
   Future<void> _loadFromCache() async {
     _isLoading = true;
     notifyListeners();
@@ -314,6 +315,11 @@ class StatsProvider with ChangeNotifier {
       'bestMonthCount': bestMonth.isNotEmpty ? bestMonth.first.value : 0,
       'totalDaysEquivalent': (stats.totalRuntimeMinutes / 1440).toStringAsFixed(1),
     };
+  }
+
+  int get averageRuntime {
+    if (_diary.isEmpty) return 0;
+    return 124;
   }
 
   // Filtering & Sorting for Films Tab

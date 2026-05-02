@@ -101,6 +101,8 @@ class WatchStats {
   final Map<String, int> genreDistribution;
 
   final int totalRuntimeMinutes;
+  final Map<String, int> directorCounts;
+  final Map<double, int> ratingCounts;
 
   WatchStats({
     required this.totalWatched,
@@ -108,6 +110,8 @@ class WatchStats {
     required this.yearDistribution,
     required this.genreDistribution,
     required this.totalRuntimeMinutes,
+    this.directorCounts = const {},
+    this.ratingCounts = const {},
   });
 
   Map<String, dynamic> toMap() {
@@ -126,7 +130,7 @@ class WatchStats {
       averageRating: map['averageRating'],
       yearDistribution: _parseMap(map['yearDistribution']),
       genreDistribution: _parseMapString(map['genreDistribution']),
-      totalRuntimeMinutes: map['totalRuntimeMinutes'],
+      totalRuntimeMinutes: map['totalRuntimeMinutes'] ?? 0,
     );
   }
 
