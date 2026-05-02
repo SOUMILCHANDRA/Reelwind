@@ -6,6 +6,9 @@ class DiaryEntry {
   final bool isRewatch;
   final String? letterboxdUri;
 
+  final String? review;
+  bool isLiked;
+
   DiaryEntry({
     required this.title,
     required this.year,
@@ -13,6 +16,8 @@ class DiaryEntry {
     required this.rating,
     required this.isRewatch,
     this.letterboxdUri,
+    this.review,
+    this.isLiked = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +28,8 @@ class DiaryEntry {
       'rating': rating,
       'isRewatch': isRewatch ? 1 : 0,
       'letterboxdUri': letterboxdUri,
+      'review': review,
+      'isLiked': isLiked ? 1 : 0,
     };
   }
 
@@ -34,6 +41,8 @@ class DiaryEntry {
       rating: map['rating'],
       isRewatch: map['isRewatch'] == 1,
       letterboxdUri: map['letterboxdUri'],
+      review: map['review'],
+      isLiked: map['isLiked'] == 1,
     );
   }
 }

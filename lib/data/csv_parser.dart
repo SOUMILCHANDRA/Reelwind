@@ -68,6 +68,45 @@ class CSVParser {
     }).toList();
   }
 
+  static List<DiaryEntry> parseReviewsCSV(String content) {
+    final fields = const CsvToListConverter().convert(content);
+    if (fields.isEmpty) return [];
+
+    return fields.skip(1).map((row) {
+      return DiaryEntry(
+        title: row[1].toString(),
+        year: int.tryParse(row[2].toString()) ?? 0,
+        watchedDate: _parseDate(row[0].toString()),
+        rating: double.tryParse(row[4].toString()) ?? 0.0,
+        isRewatch: false,
+        review: row[3].toString(),
+        letterboxdUri: row[5].toString(),
+      );
+    }).toList();
+  }
+
+  static List<String> parseLikesCSV(String content) {
+    final fields = const CsvToListConverter().convert(content);
+    if (fields.isEmpty) return [];
+    return fields.skip(1).map((row) => '${row[1]}_${row[2]}').toList();
+  }
+
+  static List<DiaryEntry> parseWatchlistCSV(String content) {
+    final fields = const CsvToListConverter().convert(content);
+    if (fields.isEmpty) return [];
+
+    return fields.skip(1).map((row) {
+      return DiaryEntry(
+        title: row[1].toString(),
+        year: int.tryParse(row[2].toString()) ?? 0,
+        watchedDate: _parseDate(row[0].toString()),
+        rating: 0.0,
+        isRewatch: false,
+        letterboxdUri: row[3].toString(),
+      );
+    }).toList();
+  }
+
   static DateTime _parseDate(String dateStr) {
     try {
       return DateFormat('yyyy-MM-dd').parse(dateStr);
