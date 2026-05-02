@@ -50,11 +50,9 @@ Reelwind is a high-fidelity desktop application built with Flutter that transfor
    flutter run -d windows
    ```
 
-## 🛡️ Security
-Reelwind is designed with security in mind. All sensitive keys are stored in a local `.env` file which is automatically ignored by version control.
-
 ## 🤝 Contributing
 Contributions are welcome! If you have ideas for new metrics, charts, or UI improvements, feel free to open a PR.
 
 ---
-*Built with ❤️ for the cinematic community.*
+*Built with ❤️ for the cinematic community.
+By Soumil Chandra*
