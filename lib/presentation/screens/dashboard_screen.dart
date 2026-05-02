@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/stats_provider.dart';
 import '../../domain/models.dart';
 
@@ -14,32 +15,37 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('WATCH STATS'),
+        title: const Text('REELWIND'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.upload_file),
+            icon: const Icon(Icons.upload_file, color: Colors.white),
             onPressed: () => statsProvider.importCSV(),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: statsProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF00C030)))
           : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildBigHero(watchStats),
-                  const SizedBox(height: 40),
-                  _buildMiniStats(watchStats, statsProvider.yearComparison),
-                  const SizedBox(height: 40),
-                  const Text('Rating Distribution', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                  const SizedBox(height: 20),
+                  _buildBigHero(context, watchStats),
+                  const SizedBox(height: 24),
+                  _buildMetricsGrid(watchStats, statsProvider.yearComparison),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Rating Distribution', trailing: 'Normal Curve'),
+                  const SizedBox(height: 24),
                   _buildRatingDistribution(statsProvider.ratingDistribution),
-                  const SizedBox(height: 40),
-                  const Text('Your Directors', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
-                  const SizedBox(height: 20),
-                  _buildDirectorList(statsProvider.topDirectors),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Your Directors'),
+                  const SizedBox(height: 24),
+                  _buildDirectorSection(statsProvider.topDirectors),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Top Genres'),
+                  const SizedBox(height: 16),
+                  _buildGenreSection(statsProvider.topGenres),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -47,37 +53,62 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBigHero(WatchStats stats) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSectionHeader(String title, {String? trailing}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text('SCREEN TIME SUMMARY', style: TextStyle(color: Color(0xFF00C030), fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 12)),
-        const SizedBox(height: 8),
-        Text(
-          '${(stats.totalRuntimeMinutes / 60).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
-          style: const TextStyle(fontSize: 72, fontWeight: FontWeight.w900, height: 1),
-        ),
-        const Text(
-          'hours watched',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white70),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "That's ${(stats.totalRuntimeMinutes / 1440).toStringAsFixed(1)} days of your life spent in the dark.",
-          style: const TextStyle(color: Colors.grey, fontSize: 14),
-        ),
+        Text(title, style: GoogleFonts.newsreader(fontSize: 24, fontWeight: FontWeight.w500, color: Colors.white)),
+        if (trailing != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, py: 4),
+            decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(20)),
+            child: Text(trailing, style: const TextStyle(fontSize: 10, color: Color(0xFF8A8A8A))),
+          ),
       ],
     );
   }
 
-  Widget _buildMiniStats(WatchStats stats, Map<String, int> comp) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildBigHero(BuildContext context, WatchStats stats) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('SCREEN TIME MASTERY', style: TextStyle(color: Color(0xFF00C030), fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text(
+            '${(stats.totalRuntimeMinutes / 60).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} hours watched',
+            style: GoogleFonts.newsreader(fontSize: 48, fontWeight: FontWeight.w900, height: 1, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "that's ${(stats.totalRuntimeMinutes / 1440).toStringAsFixed(1)} days of your life spent in the dark.",
+            style: const TextStyle(color: Colors.grey, fontSize: 16, fontStyle: FontStyle.italic),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricsGrid(WatchStats stats, Map<String, int> comp) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.5,
       children: [
-        _MiniStatItem(label: 'TOTAL FILMS', value: stats.totalWatched.toString()),
-        _MiniStatItem(label: 'AVG RATING', value: '${stats.averageRating.toStringAsFixed(1)} ★'),
-        _MiniStatItem(label: 'THIS YEAR', value: comp['thisYear'].toString()),
-        _MiniStatItem(label: 'REWATCHES', value: '124'), // Placeholder, need actual logic
+        _MetricCard(label: 'TOTAL FILMS', value: stats.totalWatched.toString()),
+        _MetricCard(label: 'AVG RATING', value: stats.averageRating.toStringAsFixed(1), suffix: '★'),
+        _MetricCard(label: 'THIS YEAR', value: comp['thisYear'].toString()),
+        _MetricCard(label: 'REWATCHES', value: '124'), // Placeholder
       ],
     );
   }
@@ -87,7 +118,7 @@ class DashboardScreen extends StatelessWidget {
     final maxCount = dist.values.isEmpty ? 1 : dist.values.reduce((a, b) => a > b ? a : b);
 
     return SizedBox(
-      height: 150,
+      height: 200,
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
@@ -99,9 +130,9 @@ class DashboardScreen extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: count.toDouble(),
-                  color: k >= 4.0 ? const Color(0xFF00C030) : Colors.grey[800]!,
-                  width: 16,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                  color: k >= 4.0 ? const Color(0xFF00C030) : Colors.white.withOpacity(0.05),
+                  width: 20,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
                 ),
               ],
             );
@@ -111,8 +142,8 @@ class DashboardScreen extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: (val, meta) => Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text((val / 2).toString(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: Text((val / 2).toString(), style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 ),
               ),
             ),
@@ -120,43 +151,109 @@ class DashboardScreen extends StatelessWidget {
             rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
-          gridData: const FlGridData(show: false),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: (maxCount / 3).clamp(1.0, 1000.0),
+            getDrawingHorizontalLine: (val) => FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
+          ),
           borderData: FlBorderData(show: false),
         ),
       ),
     );
   }
 
-  Widget _buildDirectorList(Map<String, int> directors) {
+  Widget _buildDirectorSection(Map<String, int> directors) {
     final entries = directors.entries.toList();
-    return Column(
-      children: entries.map((e) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Row(
-          children: [
-            Expanded(child: Text(e.key, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
-            Text('${e.value} Films', style: const TextStyle(color: Color(0xFF00C030), fontWeight: FontWeight.bold)),
-          ],
+    final maxVal = entries.isEmpty ? 1 : entries.first.value;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        children: entries.take(5).map((e) => Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(e.key, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  Text('${e.value} Films', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: e.value / maxVal,
+                  backgroundColor: const Color(0xFF1E1E1E),
+                  color: const Color(0xFF00C030),
+                  minHeight: 6,
+                ),
+              ),
+            ],
+          ),
+        )).toList(),
+      ),
+    );
+  }
+
+  Widget _buildGenreSection(Map<String, int> genres) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: genres.entries.take(8).map((e) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: e.value == genres.values.first ? const Color(0xFF00C030) : const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(20),
         ),
+        child: Text(e.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
       )).toList(),
     );
   }
 }
 
-class _MiniStatItem extends StatelessWidget {
+class _MetricCard extends StatelessWidget {
   final String label;
   final String value;
-  const _MiniStatItem({required this.label, required this.value});
+  final String? suffix;
+
+  const _MetricCard({required this.label, required this.value, this.suffix});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, letterSpacing: 1)),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, letterSpacing: 2, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(value, style: GoogleFonts.newsreader(fontSize: 32, fontWeight: FontWeight.w500, color: Colors.white)),
+              if (suffix != null) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.star, color: const Color(0xFF00C030), size: 20),
+              ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

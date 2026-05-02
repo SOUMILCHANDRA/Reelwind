@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/stats_provider.dart';
 import '../../domain/models.dart';
 
@@ -32,17 +33,12 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('REELWIND'),
-        leading: const Icon(Icons.menu),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () {},
+        ),
         actions: [
-          if (years.isNotEmpty)
-            DropdownButton<int>(
-              value: _selectedYear,
-              dropdownColor: const Color(0xFF1a1a1a),
-              underline: const SizedBox(),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-              items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
-              onChanged: (val) => setState(() => _selectedYear = val),
-            ),
+          _buildProfileAvatar(),
           const SizedBox(width: 16),
         ],
       ),
@@ -50,142 +46,231 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Watching History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text(_selectedYear.toString(), style: const TextStyle(color: Color(0xFF00C030), fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GestureDetector(
-                onTapDown: (details) => _handleHeatmapTap(context, details, statsProvider, _selectedYear!),
-                child: CustomPaint(
-                  size: const Size(53 * 14.0, 7 * 14.0),
-                  painter: GitHubHeatmapPainter(
-                    data: statsProvider.watchingFrequency,
-                    year: _selectedYear ?? DateTime.now().year,
-                    focusedDate: _focusedDate,
-                  ),
-                ),
-              ),
-            ),
+            _buildGreetingHeader(),
+            const SizedBox(height: 24),
+            _buildHeatmapCard(statsProvider, years),
             const SizedBox(height: 32),
-            _buildOnThisDaySection(statsProvider),
+            _buildOnThisDayHeader(),
+            const SizedBox(height: 16),
+            _buildHorizontalFilmGallery(statsProvider),
             const SizedBox(height: 32),
-            _buildStreakCard(statsProvider),
+            _buildStreakBadge(statsProvider),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOnThisDaySection(StatsProvider provider) {
+  Widget _buildGreetingHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('WELCOME BACK', style: TextStyle(fontSize: 10, color: Colors.grey, letterSpacing: 2, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text('Hey, Cinephile', style: GoogleFonts.newsreader(fontSize: 32, fontWeight: FontWeight.w500, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileAvatar() {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white10),
+        image: const DecorationImage(
+          image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuDurZME-ROXTCUPysygOAd2K6nhk02UlpaxkGcj_4X64PfstilNmCRZ8UgPxZolwihxrn3uoMCdoaA_NUtwJpwV6Hq_xD66ZBiV3eQevIau1N3aUni_1dPEI9A0ySJZP0KbvBtzuEcPk_CHL8f-OIjETVJ6cUqJyug0zhuPENuyU8KE0hveNZTTJGAJaI1QToY9UrNrgF-YbeZx36I6LMJuBBPppZd18FFxgjtIj3BSegQM5QU_axIXTp232v7d-JKrndmIG7xYy7Y'),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeatmapCard(StatsProvider provider, List<int> years) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.grid_view, color: Color(0xFF00C030), size: 20),
+                  const SizedBox(width: 8),
+                  Text('Watching History', style: GoogleFonts.newsreader(fontSize: 24, fontWeight: FontWeight.w500)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  children: [
+                    Text(_selectedYear.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    const Icon(Icons.expand_more, size: 16, color: Colors.grey),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: GestureDetector(
+              onTapDown: (details) => _handleHeatmapTap(context, details, provider, _selectedYear!),
+              child: CustomPaint(
+                size: const Size(53 * 14.0, 7 * 14.0),
+                painter: GitHubHeatmapPainter(
+                  data: provider.watchingFrequency,
+                  year: _selectedYear ?? DateTime.now().year,
+                  focusedDate: _focusedDate,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildHeatmapLegend(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeatmapLegend() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        const Text('LESS', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
+        const SizedBox(width: 8),
+        ...[0, 1, 2, 3, 4].map((i) => Container(
+          width: 12,
+          height: 12,
+          margin: const EdgeInsets.only(left: 4),
+          decoration: BoxDecoration(
+            color: _getColorForLegend(i),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        )),
+        const SizedBox(width: 8),
+        const Text('MORE', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Color _getColorForLegend(int i) {
+    if (i == 0) return const Color(0xFF1A1A1A);
+    if (i == 1) return const Color(0xFF1A6B30);
+    if (i == 2) return const Color(0xFF00C030);
+    return const Color(0xFF00ff44);
+  }
+
+  Widget _buildOnThisDayHeader() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Icon(Icons.event_repeat, color: Color(0xFF00C030), size: 20),
+          const SizedBox(width: 8),
+          Text('On this day', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHorizontalFilmGallery(StatsProvider provider) {
     final dayMovies = provider.diary.where((e) {
       return e.watchedDate.year == _focusedDate.year &&
              e.watchedDate.month == _focusedDate.month &&
              e.watchedDate.day == _focusedDate.day;
     }).toList();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                'On this day',
-                style: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.bold, letterSpacing: 1),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (dayMovies.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: const Color(0xFF1a1a1a), borderRadius: BorderRadius.circular(12)),
-              child: const Center(child: Text('No films watched on this day', style: TextStyle(color: Colors.grey))),
-            )
-          else
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: dayMovies.length,
-                itemBuilder: (context, index) {
-                  final entry = dayMovies[index];
-                  final movie = provider.getMovieMetadata(entry.title, entry.year);
-                  return Container(
-                    width: 140,
-                    margin: const EdgeInsets.only(right: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: movie?.posterUrl != null
-                                ? Image.network(movie!.posterUrl!, fit: BoxFit.cover, width: double.infinity)
-                                : Container(color: Colors.grey[900], child: const Icon(Icons.movie)),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(entry.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                        Row(
-                          children: [
-                            const Icon(Icons.star, size: 10, color: Color(0xFF00C030)),
-                            const SizedBox(width: 4),
-                            Text(entry.rating.toString(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                          ],
-                        ),
-                      ],
+    return SizedBox(
+      height: 120,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: dayMovies.isEmpty ? 5 : dayMovies.length,
+        itemBuilder: (context, index) {
+          if (dayMovies.isEmpty) {
+            return Container(
+              width: 70,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(6)),
+              child: const Center(child: Icon(Icons.movie_outlined, color: Colors.white10)),
+            );
+          }
+          final entry = dayMovies[index];
+          final movie = provider.getMovieMetadata(entry.title, entry.year);
+          return Container(
+            width: 70,
+            margin: const EdgeInsets.only(right: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      image: movie?.posterUrl != null
+                        ? DecorationImage(image: NetworkImage(movie!.posterUrl!), fit: BoxFit.cover)
+                        : null,
+                      color: const Color(0xFF1E1E1E),
                     ),
-                  );
-                },
-              ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(entry.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              ],
             ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildStreakCard(StatsProvider provider) {
+  Widget _buildStreakBadge(StatsProvider provider) {
     final facts = provider.streaksAndFacts;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [const Color(0xFF1a1a1a), Colors.grey[900]!]),
+        gradient: const LinearGradient(colors: [Color(0xFF141414), Color(0xFF1E1E1E)]),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[800]!),
+        border: Border.all(color: const Color(0xFF00C030).withOpacity(0.1)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Your longest streak', style: TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(height: 4),
-              const Text('Keep it up, you\'re on fire!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            ],
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF3b3000)),
+            child: const Icon(Icons.emoji_events, color: Color(0xFFFFFFFF), size: 24),
           ),
-          Row(
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Your longest streak', style: TextStyle(color: Color(0xFFe4c53d), fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('Keep it up, you\'re on fire!', style: TextStyle(color: Colors.grey, fontSize: 14)),
+              ],
+            ),
+          ),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${facts['longestStreak']}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF00C030))),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 6, left: 4),
-                child: Text('DAYS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
-              ),
+              Text('${facts['longestStreak']}', style: GoogleFonts.newsreader(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFFe4c53d))),
+              const Text('DAYS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFe4c53d))),
             ],
           ),
         ],
@@ -237,32 +322,17 @@ class GitHubHeatmapPainter extends CustomPainter {
         final dayIndex = week * 7 + day;
         final date = firstDayOfYear.add(Duration(days: dayIndex - offset));
 
-        if (date.year != year) {
-          paint.color = Colors.transparent;
-        } else {
-          final cleanDate = DateTime(date.year, date.month, date.day);
-          final count = data[cleanDate] ?? 0;
-          
-          final isFocused = cleanDate.year == focusedDate.year && 
-                            cleanDate.month == focusedDate.month && 
-                            cleanDate.day == focusedDate.day;
+        if (date.year != year) continue;
+        
+        final cleanDate = DateTime(date.year, date.month, date.day);
+        final count = data[cleanDate] ?? 0;
+        
+        final isFocused = cleanDate.year == focusedDate.year && 
+                          cleanDate.month == focusedDate.month && 
+                          cleanDate.day == focusedDate.day;
 
-          paint.color = _getColorForCount(count);
-          
-          if (isFocused) {
-            paint.strokeWidth = 2;
-            paint.style = PaintingStyle.stroke;
-            final rect = Rect.fromLTWH(
-              week * (cellSize + gap) - 1,
-              day * (cellSize + gap) - 1,
-              cellSize + 2,
-              cellSize + 2,
-            );
-            canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(3)), Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 1);
-            paint.style = PaintingStyle.fill;
-          }
-        }
-
+        paint.color = _getColorForCount(count);
+        
         final rect = Rect.fromLTWH(
           week * (cellSize + gap),
           day * (cellSize + gap),
@@ -270,22 +340,25 @@ class GitHubHeatmapPainter extends CustomPainter {
           cellSize,
         );
 
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(rect, const Radius.circular(2)),
-          paint,
-        );
+        canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(2)), paint);
+        
+        if (isFocused) {
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(rect.inflate(1), const Radius.circular(3)),
+            Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 1
+          );
+        }
       }
     }
   }
 
   Color _getColorForCount(int count) {
-    if (count == 0) return const Color(0xFF1a1a1a);
-    if (count == 1) return const Color(0xFF1a6b30);
+    if (count == 0) return const Color(0xFF1A1A1A);
+    if (count == 1) return const Color(0xFF1A6B30);
     if (count == 2) return const Color(0xFF00C030);
     return const Color(0xFF00ff44);
   }
 
   @override
-  bool shouldRepaint(GitHubHeatmapPainter oldDelegate) => 
-    oldDelegate.year != year || oldDelegate.data != data || oldDelegate.focusedDate != focusedDate;
+  bool shouldRepaint(GitHubHeatmapPainter oldDelegate) => true;
 }
