@@ -32,6 +32,26 @@ class DashboardScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildSummaryCards(watchStats),
+                    if (statsProvider.enrichmentMessage.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Column(
+                          children: [
+                            LinearProgressIndicator(
+                              value: statsProvider.totalToEnrich > 0
+                                  ? statsProvider.enrichmentProgress / statsProvider.totalToEnrich
+                                  : 0,
+                              backgroundColor: Colors.grey[800],
+                              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              statsProvider.enrichmentMessage,
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 24),
                     const Text('Activity Heatmap', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),

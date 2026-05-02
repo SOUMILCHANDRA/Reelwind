@@ -15,10 +15,16 @@ class StatsProvider with ChangeNotifier {
   Map<String, Movie> _movieMetadata = {};
   bool _isLoading = false;
   bool _isApiEnabled = false;
+  int _enrichmentProgress = 0;
+  int _totalToEnrich = 0;
+  String _enrichmentMessage = '';
 
   List<DiaryEntry> get diary => _diary;
   bool get isLoading => _isLoading;
   bool get isApiEnabled => _isApiEnabled;
+  int get enrichmentProgress => _enrichmentProgress;
+  int get totalToEnrich => _totalToEnrich;
+  String get enrichmentMessage => _enrichmentMessage;
 
   void toggleApi(bool value) {
     _isApiEnabled = value;
@@ -69,13 +75,29 @@ class StatsProvider with ChangeNotifier {
   }
 
   Future<void> _enrichMetadata() async {
+    // Filter for unique title + year combinations to enrich
+    final uniqueFilms = <String, DiaryEntry>{};
     for (var entry in _diary) {
+      uniqueFilms['${entry.title}_${entry.year}'] = entry;
+    }
+
+    _totalToEnrich = uniqueFilms.length;
+    _enrichmentProgress = 0;
+
+    for (var entry in uniqueFilms.values) {
+      _enrichmentProgress++;
+      _enrichmentMessage = 'Enriching $_enrichmentProgress of $_totalToEnrich films...';
+      notifyListeners();
+
       final key = '${entry.title}_${entry.year}';
       if (!_movieMetadata.containsKey(key)) {
         // Check cache
         Movie? movie = await _repository.getMovie(entry.title, entry.year);
         
         if (movie == null) {
+          // 200ms delay to avoid rate limits
+          await Future.delayed(const Duration(milliseconds: 200));
+          
           movie = await _tmdbClient.fetchMovieDetails(entry.title, entry.year);
           if (movie != null) {
             await _repository.saveMovie(movie);
@@ -88,6 +110,8 @@ class StatsProvider with ChangeNotifier {
         }
       }
     }
+    _enrichmentMessage = '';
+    notifyListeners();
   }
 
   Movie? getMovieMetadata(String title, int year) {
