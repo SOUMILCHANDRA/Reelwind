@@ -36,11 +36,15 @@ class StatsProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     
-    _diary = await _repository.getDiaryEntries();
-    _cachedStats = await _repository.getStats();
-    
-    _isLoading = false;
-    notifyListeners();
+    try {
+      _diary = await _repository.getDiaryEntries();
+      _cachedStats = await _repository.getStats();
+    } catch (e) {
+      debugPrint('Error loading from cache: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void toggleApi(bool value) {
