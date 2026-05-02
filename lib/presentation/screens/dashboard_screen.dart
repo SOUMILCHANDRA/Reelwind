@@ -77,32 +77,35 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildSummaryCards(dynamic watchStats) {
-    return Row(
-      children: [
-        Expanded(
-          child: _SummaryCard(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _SummaryCard(
             title: 'Watched',
             value: watchStats.totalWatched.toString(),
             subtitle: 'Total Films',
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SummaryCard(
+          const SizedBox(width: 12),
+          _SummaryCard(
             title: 'Average',
             value: watchStats.averageRating.toStringAsFixed(1),
             subtitle: 'Rating',
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SummaryCard(
+          const SizedBox(width: 12),
+          _SummaryCard(
+            title: 'Time',
+            value: (watchStats.totalRuntimeMinutes / 60).toStringAsFixed(0),
+            subtitle: 'Hours Spent',
+          ),
+          const SizedBox(width: 12),
+          _SummaryCard(
             title: 'This Year',
             value: (watchStats.yearDistribution[DateTime.now().year] ?? 0).toString(),
             subtitle: '${DateTime.now().year} Watches',
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -119,21 +122,39 @@ class DashboardScreen extends StatelessWidget {
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             leading: movie?.posterUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(4),
-                    child: Image.network(movie!.posterUrl!, width: 40, fit: BoxFit.cover),
+                    child: Image.network(movie!.posterUrl!, width: 45, height: 70, fit: BoxFit.cover),
                   )
-                : const Icon(Icons.movie),
-            title: Text(entry.title),
-            subtitle: Text('${entry.year} • Watched on ${_formatDate(entry.watchedDate)}'),
+                : const Icon(Icons.movie, size: 40),
+            title: Row(
+              children: [
+                Expanded(child: Text(entry.title, style: const TextStyle(fontWeight: FontWeight.bold))),
+                if (entry.isRewatch)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8.0),
+                    child: Icon(Icons.refresh, size: 14, color: Colors.blue),
+                  ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${entry.year} • Dir. ${movie?.director ?? "Loading..."}'),
+                Text(
+                  '${_formatDate(entry.watchedDate)} • ${movie?.runtimeMinutes ?? "?"} min',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
             trailing: entry.rating > 0
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.star, color: Color(0xFF00E054), size: 16),
-                      const SizedBox(width: 4),
-                      Text(entry.rating.toString()),
+                      const Icon(Icons.star, color: Color(0xFF00E054), size: 20),
+                      Text(entry.rating.toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
                     ],
                   )
                 : null,

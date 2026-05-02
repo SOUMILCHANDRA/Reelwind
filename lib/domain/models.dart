@@ -78,10 +78,13 @@ class WatchStats {
   final Map<int, int> yearDistribution;
   final Map<String, int> genreDistribution;
 
+  final int totalRuntimeMinutes;
+
   WatchStats({
     required this.totalWatched,
     required this.averageRating,
     required this.yearDistribution,
     required this.genreDistribution,
+    required this.totalRuntimeMinutes,
   });
 }

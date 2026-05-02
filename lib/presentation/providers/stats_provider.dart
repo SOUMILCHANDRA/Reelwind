@@ -84,12 +84,14 @@ class StatsProvider with ChangeNotifier {
     
     Map<int, int> years = {};
     Map<String, int> genres = {};
+    int totalRuntime = 0;
 
     for (var entry in _diary) {
       years[entry.watchedDate.year] = (years[entry.watchedDate.year] ?? 0) + 1;
       
       final movie = getMovieMetadata(entry.title, entry.year);
       if (movie != null) {
+        totalRuntime += movie.runtimeMinutes ?? 0;
         for (var genre in movie.genres) {
           genres[genre] = (genres[genre] ?? 0) + 1;
         }
@@ -101,6 +103,7 @@ class StatsProvider with ChangeNotifier {
       averageRating: avgRating,
       yearDistribution: years,
       genreDistribution: genres,
+      totalRuntimeMinutes: totalRuntime,
     );
   }
 
