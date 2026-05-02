@@ -16,7 +16,7 @@ class SQLiteRepository {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'reelwind_v3.db');
+    String path = join(await getDatabasesPath(), 'reelwind_v4.db');
     return await openDatabase(
       path,
       version: 1,
@@ -25,7 +25,7 @@ class SQLiteRepository {
           'CREATE TABLE movies(title TEXT, year INTEGER, posterUrl TEXT, director TEXT, genres TEXT, runtimeMinutes INTEGER, isLiked INTEGER, watchCount INTEGER, PRIMARY KEY(title, year))',
         );
         await db.execute(
-          'CREATE TABLE diary_entries(title TEXT, year INTEGER, watchedDate TEXT, rating REAL, isRewatch INTEGER, letterboxdUri TEXT)',
+          'CREATE TABLE diary_entries(title TEXT, year INTEGER, watchedDate TEXT, rating REAL, isRewatch INTEGER, letterboxdUri TEXT, review TEXT, isLiked INTEGER)',
         );
         await db.execute(
           'CREATE TABLE cached_stats(key TEXT PRIMARY KEY, totalWatched INTEGER, averageRating REAL, yearDistribution TEXT, genreDistribution TEXT, totalRuntimeMinutes INTEGER)',
@@ -75,5 +75,12 @@ class SQLiteRepository {
     final List<Map<String, dynamic>> maps = await db.query('cached_stats', where: 'key = ?', whereArgs: ['latest']);
     if (maps.isEmpty) return null;
     return WatchStats.fromMap(maps.first);
+  }
+
+  Future<void> clearAll() async {
+    final db = await database;
+    await db.delete('movies');
+    await db.delete('diary_entries');
+    await db.delete('cached_stats');
   }
 }

@@ -7,6 +7,7 @@ import '../../domain/models.dart';
 import '../../data/csv_parser.dart';
 import '../../data/tmdb_client.dart';
 import '../../data/sqlite_repository.dart';
+import '../../data/unified_importer.dart';
 
 class StatsProvider with ChangeNotifier {
   final TMDBClient _tmdbClient = TMDBClient();
@@ -15,11 +16,12 @@ class StatsProvider with ChangeNotifier {
   List<DiaryEntry> _diary = [];
   Map<String, Movie> _movieMetadata = {};
   WatchStats? _cachedStats;
-  bool _isLoading = false;
+  bool _isLoading = true;
   bool _isApiEnabled = false;
   int _enrichmentProgress = 0;
   int _totalToEnrich = 0;
   String _enrichmentMessage = '';
+  String _globalSearchQuery = '';
 
   StatsProvider() {
     _isApiEnabled = dotenv.env['TMDB_API_KEY']?.isNotEmpty ?? false;
@@ -32,6 +34,21 @@ class StatsProvider with ChangeNotifier {
   int get enrichmentProgress => _enrichmentProgress;
   int get totalToEnrich => _totalToEnrich;
   String get enrichmentMessage => _enrichmentMessage;
+  String get globalSearchQuery => _globalSearchQuery;
+
+  int _selectedIndex = 0;
+  int get selectedIndex => _selectedIndex;
+
+  void setSelectedIndex(int index) {
+    _selectedIndex = index;
+    notifyListeners();
+  }
+
+  void setGlobalSearch(String query, {bool switchToFilms = true}) {
+    _globalSearchQuery = query;
+    if (switchToFilms) _selectedIndex = 1;
+    notifyListeners();
+  }
 
 
   Future<void> _loadFromCache() async {
@@ -40,6 +57,16 @@ class StatsProvider with ChangeNotifier {
     
     try {
       _diary = await _repository.getDiaryEntries();
+      
+      // Load movie metadata for all diary entries
+      for (var entry in _diary) {
+        final key = '${entry.title}_${entry.year}';
+        final movie = await _repository.getMovie(entry.title, entry.year);
+        if (movie != null) {
+          _movieMetadata[key] = movie;
+        }
+      }
+
       _cachedStats = await _repository.getStats();
     } catch (e) {
       debugPrint('Error loading from cache: $e');
@@ -47,6 +74,19 @@ class StatsProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> logout() async {
+    _isLoading = true;
+    notifyListeners();
+    
+    await _repository.clearAll();
+    _diary = [];
+    _movieMetadata = {};
+    _cachedStats = null;
+    
+    _isLoading = false;
+    notifyListeners();
   }
 
   void toggleApi(bool value) {
@@ -58,6 +98,7 @@ class StatsProvider with ChangeNotifier {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv'],
+      allowMultiple: true,
     );
 
     if (result != null) {
@@ -65,35 +106,46 @@ class StatsProvider with ChangeNotifier {
       notifyListeners();
 
       try {
-        final platformFile = result.files.single;
-        final file = File(platformFile.path!);
-        final fileName = platformFile.name.toLowerCase();
-        final content = await file.readAsString();
+        List<DiaryEntry> diary = [];
+        List<DiaryEntry> watched = [];
+        List<DiaryEntry> ratings = [];
+        List<DiaryEntry> reviews = [];
+        List<String> likedKeys = [];
 
-        List<DiaryEntry> newEntries = [];
-        if (fileName.contains('diary')) {
-          newEntries = await compute(CSVParser.parseDiaryCSV, content);
-        } else if (fileName.contains('watched')) {
-          newEntries = await compute(CSVParser.parseWatchedCSV, content);
-        } else if (fileName.contains('ratings')) {
-          newEntries = await compute(CSVParser.parseRatingsCSV, content);
-        } else {
-          newEntries = await compute(CSVParser.parseDiaryCSV, content);
+        for (var platformFile in result.files) {
+          final file = File(platformFile.path!);
+          final fileName = platformFile.name.toLowerCase();
+          final content = await file.readAsString();
+
+          if (fileName.contains('diary')) {
+            diary = await compute(CSVParser.parseDiaryCSV, content);
+          } else if (fileName.contains('watched')) {
+            watched = await compute(CSVParser.parseWatchedCSV, content);
+          } else if (fileName.contains('ratings')) {
+            ratings = await compute(CSVParser.parseRatingsCSV, content);
+          } else if (fileName.contains('reviews')) {
+            reviews = await compute(CSVParser.parseReviewsCSV, content);
+          } else if (fileName.contains('likes')) {
+            likedKeys = await compute(CSVParser.parseLikesCSV, content);
+          }
         }
 
-        _diary = newEntries;
+        _diary = UnifiedDataProcessor.merge(
+          diary: diary,
+          watched: watched,
+          ratings: ratings,
+          reviews: reviews,
+          likedKeys: likedKeys,
+        );
+
         await _repository.saveDiaryEntries(_diary);
-        
-        print('Imported ${_diary.length} entries.');
+        print('Imported and unified ${_diary.length} entries.');
         
         if (_isApiEnabled) {
           print('Starting enrichment...');
           await _enrichMetadata();
-        } else {
-          print('API enrichment disabled.');
         }
 
-        // Pre-compute and cache stats
         _cachedStats = _calculateStats();
         if (_cachedStats != null) {
           await _repository.saveStats(_cachedStats!);
@@ -140,6 +192,11 @@ class StatsProvider with ChangeNotifier {
     );
   }
 
+  Future<void> resyncMetadata() async {
+    print('Manually triggering re-sync...');
+    await _enrichMetadata();
+  }
+
   Future<void> _enrichMetadata() async {
     // Filter for unique title + year combinations to enrich
     final uniqueFilms = <String, DiaryEntry>{};
@@ -161,8 +218,8 @@ class StatsProvider with ChangeNotifier {
         Movie? movie = await _repository.getMovie(entry.title, entry.year);
         
         if (movie == null) {
-          // 200ms delay to avoid rate limits
-          await Future.delayed(const Duration(milliseconds: 200));
+          // 1s delay for maximum stability with SSL handshakes
+          await Future.delayed(const Duration(seconds: 1));
           
           movie = await _tmdbClient.fetchMovieDetails(entry.title, entry.year);
           if (movie != null) {
